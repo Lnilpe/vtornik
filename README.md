@@ -102,3 +102,32 @@ def need_jacket(temp):
 temp = float(input("Введите температуру: "))
 print("Нужна куртка!" if need_jacket(temp) else "Куртка не нужна!")
 ```
+
+
+
+# A1 
+# Код-ревью функции make_phone
+## 1. Несоответствия: Обработка букв: В коде проверяется только наличие буквы "a", но не все буквы. ТЗ требует, чтобы все буквы были запрещены.
+## 2. Вердикт: принять / принять с замечаниями / отклонить: отклонить
+## 3. Что исправить: Проверять, что строка состоит только из цифр использовать .isdigit()
+Код на ревью
+```py
+def make_phone(raw):
+    try:
+        text = str(raw)
+        if "a" in text or text:
+            return None
+        number = "+" + text
+        if len(number) > 11:
+            return None
+        return number
+    except:
+        print("ошибка")
+    finally:
+        print("проверка номера завершена")
+        return number
+```
+Готовый код
+```py
+-
+```
