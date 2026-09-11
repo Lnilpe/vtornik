@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>🎮 Мини-игры</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    color: white;
+    overflow-x: hidden;
+  }
+
+  /* ===== МЕНЮ ===== */
+  #menu { padding: 30px 20px; }
+  #menu h1 {
+    text-align: center; font-size: 48px; margin-bottom: 10px;
+    background: linear-gradient(90deg, #4caf50, #ffd54f, #e74c3c, #3498db);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; animation: shine 4s linear infinite; background-size: 200% auto;
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+  .subtitle { text-align: center; color: #888; margin-bottom: 40px; font-size: 16px; }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px; max-width: 1200px; margin: 0 auto;
+  }
+  .game-card {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 25px 20px; text-align: center;
+    cursor: pointer; transition: all 0.25s; color: white;
+    position: relative; overflow: hidden;
+  }
+  .game-card:hover {
+    transform: translateY(-5px); border-color: #4caf50;
+    box-shadow: 0 10px 30px rgba(76,175,80,0.3);
+    background: rgba(76,175,80,0.1);
+  }
+  .game-icon { font-size: 56px; margin-bottom: 12px; display: block;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
+  .game-title { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
+  .game-desc { font-size: 13px; color: #aaa; line-height: 1.4; }
+  footer { text-align: center; color: #555; margin-top: 50px; font-size: 13px; }
+
+  /* ===== ИГРОВОЙ ЭКРАН ===== */
+  #gameScreen { display: none; padding: 20px; min-height: 100vh; }
+  #backBtn {
+    position: fixed; top: 15px; left: 15px; z-index: 10;
+    background: #4caf50; color: white; border: none;
+    padding: 10px 20px; border-radius: 8px; cursor: pointer;
+    font-size: 15px; font-weight: bold;
+  }
+  #backBtn:hover { background: #45a049; }
+  #gameContainer {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: calc(100vh - 40px); gap: 15px;
+    padding-top: 40px;
+  }
+  #gameContainer h2 { font-size: 28px; }
+  canvas { border-radius: 8px; }
+  .info { font-size: 18px; }
+
+  /* ===== ОБЩИЕ ЭЛЕМЕНТЫ ИГР ===== */
+  .btn {
+    font-size: 16px; padding: 10px 25px; border-radius: 8px;
+    border: none; background: #4caf50; color: white;
+    cursor: pointer; font-weight: bold;
+  }
+  .btn:hover { background: #45a049; }
+
+  /* 2048 */
+  .g2048-grid { display: grid; grid-template-columns: repeat(4, 100px); gap: 10px;
+    background: #bbada0; padding: 10px; border-radius: 10px; }
+  .g2048-cell { width: 100px; height: 100px; background: #cdc1b4; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: bold; color: #776e65; }
+  .g2048-cell.c2 { background: #eee4da; } .g2048-cell.c4 { background: #ede0c8; }
+  .g2048-cell.c8 { background: #f2b179; color: white; }
+  .g2048-cell.c16 { background: #f59563; color: white; }
+  .g2048-cell.c32 { background: #f67c5f; color: white; }
+  .g2048-cell.c64 { background: #f65e3b; color: white; }
+  .g2048-cell.c128 { background: #edcf72; color: white; font-size: 30px; }
+  .g2048-cell.c256 { background: #edcc61; color: white; font-size: 30px; }
+  .g2048-cell.c512 { background: #edc850; color: white; font-size: 30px; }
+  .g2048-cell.c1024 { background: #edc53f; color: white; font-size: 24px; }
+  .g2048-cell.c2048 { background: #edc22e; color: white; font-size: 24px; }
+
+  /* Memory */
+  .mem-grid { display: grid; grid-template-columns: repeat(4, 100px); gap: 12px; }
+  .mem-card {
+    width: 100px; height: 100px; background: #4caf50; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; cursor: pointer; user-select: none; transition: all 0.3s;
+  }
+  .mem-card:hover { transform: scale(1.05); }
+  .mem-card.flipped { background: #fff; }
+  .mem-card.matched { background: #2e7d32; opacity: 0.5; cursor: default; }
+
+  /* Minesweeper */
+  .ms-grid { display: grid; gap: 2px; background: #333; padding: 5px; border-radius: 6px; }
+  .ms-cell {
+    width: 32px; height: 32px; background: #888; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; cursor: pointer; user-select: none;
+    font-size: 16px; color: white;
+  }
+  .ms-cell:hover { background: #aaa; }
+  .ms-cell.open { background: #ddd; color: #333; cursor: default; }
+  .ms-cell.mine { background: #e74c3c; }
+  .ms-cell.flag { background: #f39c12; }
+
+  /* Tic-tac-toe */
+  .ttt-grid { display: grid; grid-template-columns: repeat(3, 110px); gap: 8px;
+    background: #333; padding: 8px; border-radius: 12px; }
+  .ttt-cell {
+    width: 110px; height: 110px; background: #1a1a2e; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 60px; cursor: pointer; user-select: none; transition: background 0.15s;
+  }
+  .ttt-cell:hover { background: #252540; }
+  .ttt-cell.x { color: #4caf50; }
+  .ttt-cell.o { color: #e74c3c; }
+
+  /* Reaction */
+  #reactArea {
+    width: 90vw; height: 55vh; max-width: 800px;
+    border-radius: 16px; background: #444;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; transition: background 0.15s; user-select: none;
+  }
+  #reactArea.waiting { background: #e74c3c; }
+  #reactArea.ready { background: #4caf50; }
+  #reactArea.result { background: #3498db; }
+  #reactMsg { font-size: 28px; text-align: center; }
+  #reactTime { font-size: 60px; font-weight: bold; color: #ffd54f; margin-top: 10px; }
+
+  /* Slither UI */
+  #slitherUI { position: fixed; top: 10px; left: 10px; color: white;
+    font-size: 18px; text-shadow: 1px 1px 3px black; pointer-events: none; z-index: 5; }
+  #slitherLB {
+    position: fixed; top: 10px; right: 10px;
+    background: rgba(0,0,0,0.6); color: white;
+    padding: 12px 18px; border-radius: 10px; font-size: 15px;
+    min-width: 220px; border: 1px solid rgba(255,255,255,0.1); z-index: 5;
+  }
+  #slitherLB h3 { margin: 0 0 8px 0; font-size: 16px; color: #ffd54f;
+    text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 6px; }
+  .lb-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; }
+  .lb-row.me { color: #4caf50; font-weight: bold; }
+  .lb-row .pos { color: #aaa; margin-right: 8px; }
+  .lb-row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-row .len { color: #ffd54f; margin-left: 8px; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; z-index: 100; gap: 15px; color: white;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 { font-size: 42px; color: #4caf50; }
+  .overlay input {
+    font-size: 20px; padding: 12px 20px; border-radius: 8px;
+    border: 2px solid #4caf50; background: #222; color: white;
+    text-align: center; outline: none;
+  }
+  .skinGrid { display: grid; grid-template-columns: repeat(5, 70px); gap: 12px; }
+  .skin {
+    width: 70px; height: 70px; border-radius: 10px; cursor: pointer;
+    border: 3px solid transparent; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; background: #222;
+  }
+  .skin:hover { transform: scale(1.08); border-color: #fff; }
+  .skin.selected { border-color: #4caf50; box-shadow: 0 0 20px #4caf50; }
+</style>
+</head>
+<body>
+
+<!-- ============ МЕНЮ ============ -->
+<div id="menu">
+  <h1>🎮 Мини-игры</h1>
+  <p class="subtitle">12 игр — работает без интернета</p>
+  <div class="grid" id="gameGrid"></div>
+  <footer>Сделано для оффлайн-игры · 12 игр</footer>
+</div>
+
+<!-- ============ ИГРОВОЙ ЭКРАН ============ -->
+<div id="gameScreen">
+  <button id="backBtn" onclick="closeGame()">← В меню</button>
+  <div id="gameContainer"></div>
+</div>
+
+<script>
+// ================================================================
+// СИСТЕМА МЕНЮ
+// ================================================================
+const GAMES = [
+  { id: 'slither',    icon: '🐍', title: 'Слезарио',     desc: 'Расти как червяк, ешь еду, побеждай ботов' },
+  { id: 'snake',      icon: '🟩', title: 'Змейка',       desc: 'Классика: собирай яблоки' },
+  { id: 'tetris',     icon: '🧱', title: 'Тетрис',       desc: 'Составляй линии из блоков' },
+  { id: '2048',       icon: '🔢', title: '2048',         desc: 'Сдвигай плитки, собери 2048' },
+  { id: 'pong',       icon: '🏓', title: 'Пинг-понг',    desc: 'Отбивай мяч против бота' },
+  { id: 'breakout',   icon: '🧱', title: 'Арканоид',     desc: 'Разбей все кирпичи' },
+  { id: 'flappy',     icon: '🐦', title: 'Flappy Bird',  desc: 'Пролетай между трубами' },
+  { id: 'memory',     icon: '🎴', title: 'Найди пару',   desc: 'Открывай карточки, находи пары' },
+  { id: 'minesweeper',icon: '💣', title: 'Сапёр',        desc: 'Открывай клетки, не попади на мину' },
+  { id: 'tictactoe',  icon: '⭕', title: 'Крестики-нолики', desc: '3 в ряд против ИИ' },
+  { id: 'maze',       icon: '🌀', title: 'Лабиринт',     desc: 'Найди выход из лабиринта' },
+  { id: 'reaction',   icon: '⚡', title: 'Реакция',      desc: 'Кликни как можно быстрее' },
+];
+
+const grid = document.getElementById('gameGrid');
+GAMES.forEach(g => {
+  const card = document.createElement('div');
+  card.className = 'game-card';
+  card.innerHTML = `<span class="game-icon">${g.icon}</span>
+    <div class="game-title">${g.title}</div>
+    <div class="game-desc">${g.desc}</div>`;
+  card.onclick = () => openGame(g.id);
+  grid.appendChild(card);
+});
+
+let currentCleanup = null;
+
+function openGame(id) {
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'block';
+  const container = document.getElementById('gameContainer');
+  container.innerHTML = '';
+  if (currentCleanup) { currentCleanup(); currentCleanup = null; }
+  const fn = window['game_' + id];
+  if (fn) currentCleanup = fn(container) || null;
+}
+
+function closeGame() {
+  if (currentCleanup) { currentCleanup(); currentCleanup = null; }
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('menu').style.display = 'block';
+  document.getElementById('gameContainer').innerHTML = '';
+}
+
+// ================================================================
+// 1. СЛЕЗАРИО
+// ================================================================
+function game_slither(container) {
+  container.innerHTML = `
+    <div id="slitherUI">Длина: <span id="s_score">10</span> | Рекорд: <span id="s_best">0</span></div>
+    <div id="slitherLB"><h3>🏆 Лидерборд</h3><div id="s_lbList"></div></div>
+    <canvas id="s_canvas"></canvas>
+    <div class="overlay" id="s_menu">
+      <h2>🐍 Слезарио</h2>
+      <input id="s_nameInput" placeholder="Имя" maxlength="15" value="Игрок">
+      <div style="margin-top:10px">Скин:</div>
+      <div class="skinGrid" id="s_skinGrid"></div>
+      <button class="btn" onclick="s_start()">Играть</button>
+    </div>
+    <div class="overlay" id="s_gameOver">
+      <div id="s_deathMsg" style="font-size:32px">Ты проиграл!</div>
+      <div style="font-size:22px">Длина: <span id="s_final">0</span></div>
+      <button class="btn" onclick="s_showMenu()">Играть снова</button>
+    </div>
+  `;
+
+  const canvas = document.getElementById('s_canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+  resize();
+  addEventListener('resize', resize);
+
+  const WORLD_SIZE = 3000, FOOD_COUNT = 600, SEGMENT_SPACING = 6;
+  const BASE_SPEED = 2.2, TURN_SPEED = 0.08, START_LENGTH = 20;
+  const FOOD_RADIUS = 5, MIN_FOOD = 500, BOT_COUNT = 12;
+
+  const SKINS = [
+    { colors: ['#4caf50', '#2e7d32'] }, { colors: ['#e74c3c', '#c0392b'] },
+    { colors: ['#3498db', '#2980b9'] }, { colors: ['#f1c40f', '#f39c12'] },
+    { colors: ['#9b59b6', '#8e44ad'] }, { colors: ['#ff6b9d', '#e84393'] },
+    { colors: ['#1abc9c', '#16a085'] }, { colors: ['#e67e22', '#d35400'] },
+    { colors: ['#e74c3c', '#f39c12', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6'] },
+    { colors: ['#ffd700', '#ff8c00'] },
+  ];
+  const BOT_NAMES = ['Змейка','Удав','Кобра','Питон','Анаконда','Гадюка','Червяк','Слизень',
+    'Гусеница','Ниндзя','Дракон','Мастер','Хищник','Убийца','Титан','Молния','Тень','Феникс'];
+
+  let selectedSkin = 0, best = +localStorage.getItem('slither_best') || 0;
+  document.getElementById('s_best').textContent = best;
+
+  let player, foods = [], bots = [];
+  let camera = { x: 0, y: 0 };
+  let mouse = { x: W/2, y: H/2 }, mouseDown = false;
+  let gameRunning = false, lastTime = performance.now(), rafId;
+
+  function onMouseMove(e) { mouse.x = e.clientX; mouse.y = e.clientY; }
+  function onMouseDown() { mouseDown = true; }
+  function onMouseUp() { mouseDown = false; }
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mousedown', onMouseDown);
+  addEventListener('mouseup', onMouseUp);
+
+  // Скины
+  const skinGrid = document.getElementById('s_skinGrid');
+  SKINS.forEach((skin, i) => {
+    const div = document.createElement('div');
+    div.className = 'skin' + (i === selectedSkin ? ' selected' : '');
+    const cc = document.createElement('canvas');
+    cc.width = 60; cc.height = 60;
+    const cx = cc.getContext('2d');
+    for (let j = 0; j < 6; j++) {
+      cx.beginPath();
+      cx.fillStyle = skin.colors[j % skin.colors.length];
+      cx.arc(10 + j * 8, 30 + Math.sin(j * 0.8) * 6, 7, 0, Math.PI * 2);
+      cx.fill();
+    }
+    div.appendChild(cc);
+    div.onclick = () => {
+      selectedSkin = i;
+      document.querySelectorAll('#s_skinGrid .skin').forEach(el => el.classList.remove('selected'));
+      div.classList.add('selected');
+    };
+    skinGrid.appendChild(div);
+  });
+
+  function spawnFood() {
+    return { x: Math.random()*WORLD_SIZE, y: Math.random()*WORLD_SIZE, r: FOOD_RADIUS,
+      color: `hsl(${Math.random()*360}, 80%, 60%)` };
+  }
+
+  function createSnake(x, y, skinIndex, isPlayer, name) {
+    const angle = Math.random() * Math.PI * 2;
+    const segments = [];
+    for (let i = 0; i < START_LENGTH; i++)
+      segments.push({ x: x - Math.cos(angle)*i*SEGMENT_SPACING, y: y - Math.sin(angle)*i*SEGMENT_SPACING });
+    return { x, y, angle, targetAngle: angle, speed: BASE_SPEED, segments, skinIndex,
+      isPlayer, name: name || 'Игрок', targetLength: START_LENGTH, alive: true,
+      botTimer: 0, botTarget: { x, y }, botWander: 0, boostTimer: 0 };
+  }
+
+  function initWorld() {
+    foods = [];
+    for (let i = 0; i < FOOD_COUNT; i++) foods.push(spawnFood());
+    bots = [];
+    for (let i = 0; i < BOT_COUNT; i++) {
+      const skin = Math.floor(Math.random() * SKINS.length);
+      const name = BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)] + Math.floor(Math.random()*99);
+      bots.push(createSnake(Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE, skin, false, name));
+    }
+    player = createSnake(WORLD_SIZE/2, WORLD_SIZE/2, selectedSkin, true, 'Ты');
+  }
+
+  function killSnake(snake) {
+    snake.alive = false;
+    for (let j = 0; j < snake.segments.length; j += 2) {
+      const s = snake.segments[j];
+      foods.push({ x: s.x + (Math.random()-0.5)*10, y: s.y + (Math.random()-0.5)*10,
+        r: FOOD_RADIUS + 1, color: SKINS[snake.skinIndex].colors[0] });
+    }
+    if (snake.isPlayer) s_gameOver('Ты врезался!');
+  }
+
+  function updateSnake(snake) {
+    if (!snake.alive) return;
+    let diff = snake.targetAngle - snake.angle;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    diff = Math.max(-TURN_SPEED, Math.min(TURN_SPEED, diff));
+    snake.angle += diff;
+    snake.x += Math.cos(snake.angle) * snake.speed;
+    snake.y += Math.sin(snake.angle) * snake.speed;
+    if (snake.x < 0 || snake.x > WORLD_SIZE || snake.y < 0 || snake.y > WORLD_SIZE) {
+      killSnake(snake); return;
+    }
+    snake.segments[0].x = snake.x;
+    snake.segments[0].y = snake.y;
+    for (let i = 1; i < snake.segments.length; i++) {
+      const prev = snake.segments[i-1], cur = snake.segments[i];
+      const dx = prev.x - cur.x, dy = prev.y - cur.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > SEGMENT_SPACING) {
+        const t = (dist - SEGMENT_SPACING) / dist;
+        cur.x += dx * t; cur.y += dy * t;
+      }
+    }
+    if (snake.segments.length < snake.targetLength) {
+      const last = snake.segments[snake.segments.length - 1];
+      snake.segments.push({ x: last.x, y: last.y });
+    } else if (snake.segments.length > snake.targetLength) {
+      snake.segments.pop();
+    }
+  }
+
+  function updateBot(bot) {
+    if (!bot.alive) return;
+    bot.botTimer--; bot.botWander--;
+    let nearestFood = null, nearestFoodDist = Infinity;
+    for (const f of foods) {
+      const d = Math.hypot(f.x - bot.x, f.y - bot.y);
+      if (d < nearestFoodDist) { nearestFoodDist = d; nearestFood = f; }
+    }
+    let dangerX = 0, dangerY = 0, dangerLevel = 0;
+    const all = [player, ...bots];
+    for (const s of all) {
+      if (s === bot || !s.alive) continue;
+      for (let i = 0; i < s.segments.length; i += 2) {
+        const seg = s.segments[i];
+        const dx = bot.x - seg.x, dy = bot.y - seg.y;
+        const d = Math.hypot(dx, dy);
+        const forward = Math.cos(bot.angle)*dx + Math.sin(bot.angle)*dy;
+        if (d < 180 && forward > -30) {
+          const w = (180 - d) / 180;
+          dangerX += (dx / (d||1)) * w;
+          dangerY += (dy / (d||1)) * w;
+          dangerLevel += w;
+        }
+      }
+    }
+    const margin = 250;
+    let wallX = 0, wallY = 0;
+    if (bot.x < margin) wallX += (margin - bot.x) / margin;
+    if (bot.x > WORLD_SIZE - margin) wallX -= (bot.x - (WORLD_SIZE - margin)) / margin;
+    if (bot.y < margin) wallY += (margin - bot.y) / margin;
+    if (bot.y > WORLD_SIZE - margin) wallY -= (bot.y - (WORLD_SIZE - margin)) / margin;
+
+    if (bot.botTimer <= 0) {
+      bot.botTimer = 40 + Math.random() * 60;
+      if (dangerLevel > 0.6) {
+        const a = Math.atan2(dangerY, dangerX);
+        const dist = 400 + Math.random() * 300;
+        bot.botTarget = { x: bot.x + Math.cos(a)*dist, y: bot.y + Math.sin(a)*dist };
+      } else if (nearestFood && nearestFoodDist < 1200) {
+        bot.botTarget = { x: nearestFood.x, y: nearestFood.y };
+      } else if (bot.botWander <= 0) {
+        bot.botWander = 100 + Math.random() * 200;
+        const a = Math.random() * Math.PI * 2;
+        const dist = 500 + Math.random() * 800;
+        bot.botTarget = {
+          x: Math.max(100, Math.min(WORLD_SIZE - 100, bot.x + Math.cos(a)*dist)),
+          y: Math.max(100, Math.min(WORLD_SIZE - 100, bot.y + Math.sin(a)*dist))
+        };
+      }
+    }
+    let tx = bot.botTarget.x + dangerX * 500 + wallX * 800;
+    let ty = bot.botTarget.y + dangerY * 500 + wallY * 800;
+    tx = Math.max(50, Math.min(WORLD_SIZE - 50, tx));
+    ty = Math.max(50, Math.min(WORLD_SIZE - 50, ty));
+    bot.targetAngle = Math.atan2(ty - bot.y, tx - bot.x);
+
+    if (bot.segments.length > 40 && nearestFoodDist < 200 && Math.random() < 0.02) bot.boostTimer = 30;
+    if (bot.boostTimer > 0) {
+      bot.boostTimer--;
+      bot.speed = BASE_SPEED * 1.7;
+      if (Math.random() < 0.3) bot.targetLength = Math.max(20, bot.targetLength - 1);
+    } else bot.speed = BASE_SPEED;
+  }
+
+  function checkCollisions() {
+    for (let i = foods.length - 1; i >= 0; i--) {
+      const f = foods[i];
+      if (Math.hypot(f.x - player.x, f.y - player.y) < FOOD_RADIUS + 10) {
+        foods.splice(i, 1); player.targetLength += 3;
+      }
+    }
+    for (const bot of bots) {
+      if (!bot.alive) continue;
+      for (let i = foods.length - 1; i >= 0; i--) {
+        const f = foods[i];
+        if (Math.hypot(f.x - bot.x, f.y - bot.y) < FOOD_RADIUS + 10) {
+          foods.splice(i, 1); bot.targetLength += 3;
+        }
+      }
+    }
+    const all = [player, ...bots];
+    for (const attacker of all) {
+      if (!attacker.alive) continue;
+      for (const victim of all) {
+        if (!victim.alive || attacker === victim) continue;
+        for (let i = 3; i < victim.segments.length; i++) {
+          const seg = victim.segments[i];
+          if (Math.hypot(attacker.x - seg.x, attacker.y - seg.y) < 12) {
+            killSnake(attacker); break;
+          }
+        }
+        if (!attacker.alive) break;
+      }
+    }
+    while (foods.length < MIN_FOOD) foods.push(spawnFood());
+    bots = bots.filter(b => b.alive);
+    while (bots.length < BOT_COUNT) {
+      const skin = Math.floor(Math.random()*SKINS.length);
+      const name = BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)] + Math.floor(Math.random()*99);
+      bots.push(createSnake(Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE, skin, false, name));
+    }
+  }
+
+  function drawGrid() {
+    const gs = 100;
+    const sx0 = Math.floor((camera.x - W/2)/gs)*gs;
+    const sy0 = Math.floor((camera.y - H/2)/gs)*gs;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.beginPath();
+    for (let x = sx0; x <= camera.x + W/2; x += gs) {
+      const sx = x - camera.x + W/2;
+      ctx.moveTo(sx, 0); ctx.lineTo(sx, H);
+    }
+    for (let y = sy0; y <= camera.y + H/2; y += gs) {
+      const sy = y - camera.y + H/2;
+      ctx.moveTo(0, sy); ctx.lineTo(W, sy);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,60,60,0.7)';
+    ctx.lineWidth = 6;
+    ctx.shadowColor = 'red'; ctx.shadowBlur = 20;
+    ctx.strokeRect(-camera.x + W/2, -camera.y + H/2, WORLD_SIZE, WORLD_SIZE);
+    ctx.shadowBlur = 0;
+  }
+
+  function drawSnake(snake) {
+    if (!snake.alive) return;
+    const colors = SKINS[snake.skinIndex].colors;
+    const r = 10;
+    for (let i = snake.segments.length - 1; i >= 0; i--) {
+      const s = snake.segments[i];
+      const sx = s.x - camera.x + W/2;
+      const sy = s.y - camera.y + H/2;
+      if (sx < -50 || sx > W + 50 || sy < -50 || sy > H + 50) continue;
+      const radius = r * (0.7 + 0.3 * (1 - i / snake.segments.length));
+      ctx.beginPath();
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    const head = snake.segments[0];
+    const hx = head.x - camera.x + W/2;
+    const hy = head.y - camera.y + H/2;
+    if (hx > -50 && hx < W + 50 && hy > -50 && hy < H + 50) {
+      const eo = 5, ed = 6;
+      const perp = snake.angle + Math.PI/2;
+      const ex1 = hx + Math.cos(snake.angle)*ed + Math.cos(perp)*eo;
+      const ey1 = hy + Math.sin(snake.angle)*ed + Math.sin(perp)*eo;
+      const ex2 = hx + Math.cos(snake.angle)*ed - Math.cos(perp)*eo;
+      const ey2 = hy + Math.sin(snake.angle)*ed - Math.sin(perp)*eo;
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(ex1, ey1, 3.5, 0, Math.PI*2);
+      ctx.arc(ex2, ey2, 3.5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.arc(ex1 + Math.cos(snake.angle)*1.5, ey1 + Math.sin(snake.angle)*1.5, 1.8, 0, Math.PI*2);
+      ctx.arc(ex2 + Math.cos(snake.angle)*1.5, ey2 + Math.sin(snake.angle)*1.5, 1.8, 0, Math.PI*2);
+      ctx.fill();
+      if (!snake.isPlayer) {
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = 'bold 13px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(snake.name, hx, hy - 22);
+      }
+    }
+  }
+
+  function drawFoods() {
+    for (const f of foods) {
+      const sx = f.x - camera.x + W/2;
+      const sy = f.y - camera.y + H/2;
+      if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
+      ctx.beginPath();
+      ctx.fillStyle = f.color;
+      ctx.shadowColor = f.color;
+      ctx.shadowBlur = 10;
+      ctx.arc(sx, sy, f.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
+
+  function drawMinimap() {
+    const size = 150, pad = 15;
+    const x0 = W - size - pad, y0 = H - size - pad;
+    const scale = size / WORLD_SIZE;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(x0, y0, size, size);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeRect(x0, y0, size, size);
+    ctx.fillStyle = SKINS[player.skinIndex].colors[0];
+    ctx.beginPath(); ctx.arc(x0 + player.x*scale, y0 + player.y*scale, 3.5, 0, Math.PI*2); ctx.fill();
+    for (const b of bots) {
+      if (!b.alive) continue;
+      ctx.fillStyle = SKINS[b.skinIndex].colors[0];
+      ctx.beginPath(); ctx.arc(x0 + b.x*scale, y0 + b.y*scale, 2, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  function updateLeaderboard() {
+    const all = [
+      { name: player.name, len: player.targetLength, isPlayer: true, alive: player.alive },
+      ...bots.map(b => ({ name: b.name, len: b.targetLength, isPlayer: false, alive: b.alive }))
+    ].sort((a, b) => b.len - a.len).slice(0, 10);
+    document.getElementById('s_lbList').innerHTML = all.map((s, i) =>
+      `<div class="lb-row ${s.isPlayer ? 'me' : ''}"><span class="pos">${i+1}.</span>
+        <span class="name">${s.name}</span><span class="len">${s.len}</span></div>`).join('');
+  }
+
+  function update(dt) {
+    if (!player.alive) return;
+    const wmx = mouse.x - W/2 + camera.x;
+    const wmy = mouse.y - H/2 + camera.y;
+    const dx = wmx - player.x, dy = wmy - player.y;
+    if (dx*dx + dy*dy > 100) player.targetAngle = Math.atan2(dy, dx);
+    player.speed = mouseDown ? BASE_SPEED * 1.8 : BASE_SPEED;
+    if (mouseDown && player.targetLength > 20 && Math.random() < 0.15) player.targetLength -= 1;
+    updateSnake(player);
+    for (const bot of bots) { updateBot(bot); updateSnake(bot); }
+    checkCollisions();
+    camera.x += (player.x - camera.x) * 0.12;
+    camera.y += (player.y - camera.y) * 0.12;
+    document.getElementById('s_score').textContent = player.targetLength;
+    updateLeaderboard();
+  }
+
+  function render() {
+    ctx.fillStyle = '#0d1117';
+    ctx.fillRect(0, 0, W, H);
+    drawGrid();
+    drawFoods();
+    const all = [...bots, player].sort((a,b) => a.segments.length - b.segments.length);
+    for (const s of all) drawSnake(s);
+    drawMinimap();
+  }
+
+  function loop(now) {
+    const dt = Math.min(50, now - lastTime) / 16.67;
+    lastTime = now;
+    if (gameRunning) { update(dt); render(); }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  window.s_start = () => {
+    const name = document.getElementById('s_nameInput').value.trim() || 'Игрок';
+    document.getElementById('s_menu').classList.remove('show');
+    initWorld();
+    player.name = name;
+    camera.x = player.x;
+    camera.y = player.y;
+    gameRunning = true;
+  };
+
+  window.s_showMenu = () => {
+    document.getElementById('s_gameOver').classList.remove('show');
+    document.getElementById('s_menu').classList.add('show');
+    gameRunning = false;
+  };
+
+  function s_gameOver(reason) {
+    gameRunning = false;
+    if (player.targetLength > best) {
+      best = player.targetLength;
+      localStorage.setItem('slither_best', best);
+      document.getElementById('s_best').textContent = best;
+    }
+    document.getElementById('s_deathMsg').textContent = reason || 'Ты проиграл!';
+    document.getElementById('s_final').textContent = player.targetLength;
+    document.getElementById('s_gameOver').classList.add('show');
+  }
+
+  document.getElementById('s_menu').classList.add('show');
+  rafId = requestAnimationFrame(loop);
+
+  // Cleanup
+  return () => {
+    cancelAnimationFrame(rafId);
+    removeEventListener('resize', resize);
+    removeEventListener('mouseup', onMouseUp);
+    delete window.s_start;
+    delete window.s_showMenu;
+  };
+}
+
+// ================================================================
+// 2. ЗМЕЙКА
+// ================================================================
+function game_snake(container) {
+  container.innerHTML = `
+    <h2>🟩 Змейка</h2>
+    <div class="info">Счёт: <span id="sn_score">0</span> | Рекорд: <span id="sn_best">0</span></div>
+    <button class="btn" onclick="sn_reset()">Заново</button>
+    <canvas id="sn_c" width="400" height="400" style="background:#0a0a0a;border:3px solid #4caf50"></canvas>
+  `;
+  const c = document.getElementById('sn_c'), ctx = c.getContext('2d');
+  const SIZE = 20, COLS = 20, ROWS = 20;
+  let snake, dir, food, score, best = +localStorage.getItem('snake_best') || 0;
+  let lastMove = 0, rafId, speed = 120;
+
+  function reset() {
+    snake = [{x:10, y:10}]; dir = {x:1, y:0}; score = 0;
+    placeFood();
+    document.getElementById('sn_best').textContent = best;
+  }
+  function placeFood() {
+    do { food = { x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS) }; }
+    while (snake.some(s => s.x === food.x && s.y === food.y));
+  }
+  function update() {
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS ||
+        snake.some(s => s.x === head.x && s.y === head.y)) {
+      if (score > best) { best = score; localStorage.setItem('snake_best', best); }
+      reset(); return;
+    }
+    snake.unshift(head);
+    if (head.x === food.x && head.y === food.y) { score++; placeFood(); }
+    else snake.pop();
+    document.getElementById('sn_score').textContent = score;
+  }
+  function draw() {
+    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(food.x*SIZE+2, food.y*SIZE+2, SIZE-4, SIZE-4);
+    snake.forEach((s, i) => {
+      ctx.fillStyle = i === 0 ? '#66ff66' : '#4caf50';
+      ctx.fillRect(s.x*SIZE+1, s.y*SIZE+1, SIZE-2, SIZE-2);
+    });
+  }
+  function loop(t) {
+    if (t - lastMove > speed) { lastMove = t; update(); }
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+  function onKey(e) {
+    const keys = { ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1}, ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0},
+      w:{x:0,y:-1}, s:{x:0,y:1}, a:{x:-1,y:0}, d:{x:1,y:0} };
+    const nd = keys[e.key];
+    if (nd && (nd.x !== -dir.x || nd.y !== -dir.y)) dir = nd;
+  }
+  window.sn_reset = reset;
+  addEventListener('keydown', onKey);
+  reset();
+  rafId = requestAnimationFrame(loop);
+
+  return () => {
+    cancelAnimationFrame(rafId);
+    removeEventListener('keydown', onKey);
+    delete window.sn_reset;
+  };
+}
+
+// ================================================================
+// 3. ТЕТРИС
+// ================================================================
+function game_tetris(container) {
+  container.innerHTML = `
+    <h2>🧱 Тетрис</h2>
+    <div class="info">Счёт: <span id="t_score">0</span> | Линии: <span id="t_lines">0</span></div>
+    <canvas id="t_c" width="300" height="600" style="background:#000;border:3px solid #4caf50"></canvas>
+    <div style="font-size:13px;color:#888">Стрелки — двигать, ↑ — поворот, Space — сброс, R — рестарт</div>
+  `;
+  const c = document.getElementById('t_c'), ctx = c.getContext('2d');
+  const COLS = 10, ROWS = 20, SIZE = 30;
+  const SHAPES = [
+    [[1,1,1,1]],
+    [[1,1],[1,1]],
+    [[0,1,0],[1,1,1]],
+    [[1,0,0],[1,1,1]],
+    [[0,0,1],[1,1,1]],
+    [[0,1,1],[1,1,0]],
+    [[1,1,0],[0,1,1]],
+  ];
+  const COLORS = ['#00f0f0','#f0f000','#a000f0','#0000f0','#f0a000','#00f000','#f00000'];
+  let board, piece, px, py, dropTimer = 0, dropSpeed = 500, lastT = 0;
+  let score = 0, lines = 0, rafId;
+
+  function reset() {
+    board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+    score = 0; lines = 0; spawn();
+  }
+  function spawn() {
+    const i = Math.floor(Math.random() * SHAPES.length);
+    piece = SHAPES[i].map(r => [...r]);
+    piece.color = COLORS[i];
+    px = Math.floor((COLS - piece[0].length) / 2); py = 0;
+    if (collide(px, py, piece)) reset();
+  }
+  function collide(x, y, p) {
+    for (let i = 0; i < p.length; i++)
+      for (let j = 0; j < p[i].length; j++) {
+        if (!p[i][j]) continue;
+        const nx = x + j, ny = y + i;
+        if (nx < 0 || nx >= COLS || ny >= ROWS) return true;
+        if (ny >= 0 && board[ny][nx]) return true;
+      }
+    return false;
+  }
+  function merge() {
+    for (let i = 0; i < piece.length; i++)
+      for (let j = 0; j < piece[i].length; j++)
+        if (piece[i][j]) board[py+i][px+j] = piece.color;
+  }
+  function clearLines() {
+    let cleared = 0;
+    for (let i = ROWS - 1; i >= 0; i--)
+      if (board[i].every(v => v)) {
+        board.splice(i, 1); board.unshift(Array(COLS).fill(0)); cleared++; i++;
+      }
+    if (cleared) { lines += cleared; score += [0, 100, 300, 500, 800][cleared]; }
+  }
+  function rotate() {
+    const N = piece.length, M = piece[0].length;
+    const r = Array(M).fill().map(() => Array(N).fill(0));
+    for (let i = 0; i < N; i++)
+      for (let j = 0; j < M; j++) r[j][N-1-i] = piece[i][j];
+    if (!collide(px, py, r)) piece = r;
+  }
+  function step() {
+    if (!collide(px, py + 1, piece)) py++;
+    else { merge(); clearLines(); spawn(); }
+  }
+  function draw() {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    for (let i = 0; i <= COLS; i++) { ctx.beginPath(); ctx.moveTo(i*SIZE, 0); ctx.lineTo(i*SIZE, c.height); ctx.stroke(); }
+    for (let i = 0; i <= ROWS; i++) { ctx.beginPath(); ctx.moveTo(0, i*SIZE); ctx.lineTo(c.width, i*SIZE); ctx.stroke(); }
+    for (let i = 0; i < ROWS; i++)
+      for (let j = 0; j < COLS; j++)
+        if (board[i][j]) { ctx.fillStyle = board[i][j]; ctx.fillRect(j*SIZE+1, i*SIZE+1, SIZE-2, SIZE-2); }
+    ctx.fillStyle = piece.color;
+    for (let i = 0; i < piece.length; i++)
+      for (let j = 0; j < piece[i].length; j++)
+        if (piece[i][j]) ctx.fillRect((px+j)*SIZE+1, (py+i)*SIZE+1, SIZE-2, SIZE-2);
+    document.getElementById('t_score').textContent = score;
+    document.getElementById('t_lines').textContent = lines;
+  }
+  function loop(t) {
+    const dt = t - lastT; lastT = t;
+    dropTimer += dt;
+    if (dropTimer > dropSpeed) { dropTimer = 0; step(); }
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+  function onKey(e) {
+    if (e.key === 'ArrowLeft' && !collide(px-1, py, piece)) px--;
+    if (e.key === 'ArrowRight' && !collide(px+1, py, piece)) px++;
+    if (e.key === 'ArrowDown') step();
+    if (e.key === 'ArrowUp') rotate();
+    if (e.key === ' ') { e.preventDefault(); while (!collide(px, py+1, piece)) py++; step(); }
+    if (e.key === 'r') reset();
+  }
+  addEventListener('keydown', onKey);
+  reset();
+  rafId = requestAnimationFrame(loop);
+
+  return () => { cancelAnimationFrame(rafId); removeEventListener('keydown', onKey); };
+}
+
+// ================================================================
+// 4. 2048
+// ================================================================
+function game_2048(container) {
+  container.innerHTML = `
+    <h2>🔢 2048</h2>
+    <div class="info">Счёт: <span id="g_score">0</span> | Рекорд: <span id="g_best">0</span></div>
+    <button class="btn" onclick="g_reset()">Новая игра</button>
+    <div class="g2048-grid" id="g_grid"></div>
+    <div style="font-size:13px;color:#888">Стрелки / WASD</div>
+  `;
+  const grid = document.getElementById('g_grid');
+  let board, score, best = +localStorage.getItem('2048_best') || 0;
+  document.getElementById('g_best').textContent = best;
+
+  function reset() {
+    board = Array(4).fill().map(() => Array(4).fill(0));
+    score = 0; addTile(); addTile(); render();
+  }
+  function addTile() {
+    const e = [];
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (!board[i][j]) e.push([i,j]);
+    if (!e.length) return;
+    const [i,j] = e[Math.floor(Math.random()*e.length)];
+    board[i][j] = Math.random() < 0.9 ? 2 : 4;
+  }
+  function render() {
+    grid.innerHTML = '';
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+      const v = board[i][j];
+      const d = document.createElement('div');
+      d.className = 'g2048-cell' + (v ? ' c' + v : '');
+      d.textContent = v || '';
+      grid.appendChild(d);
+    }
+    document.getElementById('g_score').textContent = score;
+    if (score > best) { best = score; localStorage.setItem('2048_best', best); }
+    document.getElementById('g_best').textContent = best;
+  }
+  function slide(row) {
+    row = row.filter(v => v);
+    for (let i = 0; i < row.length - 1; i++)
+      if (row[i] === row[i+1]) { row[i] *= 2; score += row[i]; row.splice(i+1, 1); }
+    while (row.length < 4) row.push(0);
+    return row;
+  }
+  function move(dir) {
+    const before = JSON.stringify(board);
+    if (dir === 'left') for (let i = 0; i < 4; i++) board[i] = slide(board[i]);
+    else if (dir === 'right') for (let i = 0; i < 4; i++) board[i] = slide(board[i].reverse()).reverse();
+    else if (dir === 'up') for (let j = 0; j < 4; j++) {
+      let col = [board[0][j], board[1][j], board[2][j], board[3][j]];
+      col = slide(col);
+      for (let i = 0; i < 4; i++) board[i][j] = col[i];
+    }
+    else if (dir === 'down') for (let j = 0; j < 4; j++) {
+      let col = [board[0][j], board[1][j], board[2][j], board[3][j]];
+      col = slide(col.reverse()).reverse();
+      for (let i = 0; i < 4; i++) board[i][j] = col[i];
+    }
+    if (JSON.stringify(board) !== before) { addTile(); render(); }
+  }
+  function onKey(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'a') move('left');
+    if (e.key === 'ArrowRight' || e.key === 'd') move('right');
+    if (e.key === 'ArrowUp' || e.key === 'w') move('up');
+    if (e.key === 'ArrowDown' || e.key === 's') move('down');
+  }
+  window.g_reset = reset;
+  addEventListener('keydown', onKey);
+  reset();
+
+  return () => { removeEventListener('keydown', onKey); delete window.g_reset; };
+}
+
+// ================================================================
+// 5. ПИНГ-ПОНГ
+// ================================================================
+function game_pong(container) {
+  container.innerHTML = `
+    <h2>🏓 Пинг-понг</h2>
+    <canvas id="p_c" width="600" height="400" style="background:#000;border:3px solid #4caf50"></canvas>
+    <div style="font-size:13px;color:#888">Мышь или стрелки вверх/вниз</div>
+  `;
+  const c = document.getElementById('p_c'), ctx = c.getContext('2d');
+  let paddleH = 80, pw = 10;
+  let player = { x: 20, y: c.height/2 - paddleH/2, w: pw, h: paddleH, speed: 6 };
+  let ai = { x: c.width - 30, y: c.height/2 - paddleH/2, w: pw, h: paddleH, speed: 5 };
+  let ball = { x: c.width/2, y: c.height/2, r: 8, vx: 5, vy: 3 };
+  let scoreP = 0, scoreA = 0;
+  let mouseY = null, keys = {}, rafId;
+
+  c.addEventListener('mousemove', e => {
+    const r = c.getBoundingClientRect();
+    mouseY = (e.clientY - r.top) * (c.height / r.height);
+  });
+  function onKeyDown(e) { keys[e.key] = true; }
+  function onKeyUp(e) { keys[e.key] = false; }
+  addEventListener('keydown', onKeyDown);
+  addEventListener('keyup', onKeyUp);
+
+  function resetBall(dir) {
+    ball.x = c.width/2; ball.y = c.height/2;
+    ball.vx = 5 * dir;
+    ball.vy = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3);
+  }
+  function update() {
+    if (keys['ArrowUp'] || keys['w']) player.y -= player.speed;
+    if (keys['ArrowDown'] || keys['s']) player.y += player.speed;
+    if (mouseY !== null) player.y += (mouseY - player.y - player.h/2) * 0.15;
+    player.y = Math.max(0, Math.min(c.height - player.h, player.y));
+
+    const aiCenter = ai.y + ai.h/2;
+    if (aiCenter < ball.y - 10) ai.y += ai.speed;
+    else if (aiCenter > ball.y + 10) ai.y -= ai.speed;
+    ai.y = Math.max(0, Math.min(c.height - ai.h, ai.y));
+
+    ball.x += ball.vx; ball.y += ball.vy;
+    if (ball.y < ball.r || ball.y > c.height - ball.r) ball.vy *= -1;
+
+    if (ball.x - ball.r < player.x + player.w && ball.x > player.x &&
+        ball.y > player.y && ball.y < player.y + player.h) {
+      ball.vx = Math.abs(ball.vx) * 1.05;
+      ball.vy += (ball.y - (player.y + player.h/2)) * 0.1;
+    }
+    if (ball.x + ball.r > ai.x && ball.x < ai.x + ai.w &&
+        ball.y > ai.y && ball.y < ai.y + ai.h) {
+      ball.vx = -Math.abs(ball.vx) * 1.05;
+      ball.vy += (ball.y - (ai.y + ai.h/2)) * 0.1;
+    }
+    if (ball.x < 0) { scoreA++; resetBall(1); }
+    if (ball.x > c.width) { scoreP++; resetBall(-1); }
+    ball.vx = Math.max(-15, Math.min(15, ball.vx));
+    ball.vy = Math.max(-10, Math.min(10, ball.vy));
+  }
+  function draw() {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.setLineDash([10, 10]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath(); ctx.moveTo(c.width/2, 0); ctx.lineTo(c.width/2, c.height); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = 'bold 60px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(scoreP, c.width/2 - 80, 70);
+    ctx.fillText(scoreA, c.width/2 + 80, 70);
+    ctx.fillStyle = '#4caf50';
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(ai.x, ai.y, ai.w, ai.h);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+  }
+  function loop() { update(); draw(); rafId = requestAnimationFrame(loop); }
+  loop();
+
+  return () => {
+    cancelAnimationFrame(rafId);
+    removeEventListener('keydown', onKeyDown);
+    removeEventListener('keyup', onKeyUp);
+  };
+}
+
+// ================================================================
+// 6. АРКАНОИД
+// ================================================================
+function game_breakout(container) {
+  container.innerHTML = `
+    <h2>🧱 Арканоид</h2>
+    <canvas id="b_c" width="600" height="500" style="background:#000;border:3px solid #4caf50"></canvas>
+    <div style="font-size:13px;color:#888">Мышь или стрелки</div>
+  `;
+  const c = document.getElementById('b_c'), ctx = c.getContext('2d');
+  const COLS = 10, ROWS = 5, BW = 55, BH = 25, GAP = 5;
+  const OFFSET_X = (c.width - (COLS * (BW + GAP) - GAP)) / 2;
+  const OFFSET_Y = 60;
+  let paddle = { x: c.width/2 - 50, y: c.height - 30, w: 100, h: 15, speed: 7 };
+  let ball = { x: c.width/2, y: c.height - 50, r: 8, vx: 4, vy: -4 };
+  let bricks = [], score = 0, lives = 3, keys = {}, mouseX = null, rafId;
+
+  c.addEventListener('mousemove', e => {
+    const r = c.getBoundingClientRect();
+    mouseX = (e.clientX - r.left) * (c.width / r.width);
+  });
+  function onKeyDown(e) { keys[e.key] = true; }
+  function onKeyUp(e) { keys[e.key] = false; }
+  addEventListener('keydown', onKeyDown);
+  addEventListener('keyup', onKeyUp);
+
+  function initBricks() {
+    bricks = [];
+    const colors = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#3498db'];
+    for (let i = 0; i < ROWS; i++)
+      for (let j = 0; j < COLS; j++)
+        bricks.push({ x: OFFSET_X + j*(BW+GAP), y: OFFSET_Y + i*(BH+GAP),
+          w: BW, h: BH, color: colors[i], alive: true });
+  }
+  function resetBall() {
+    ball.x = c.width/2; ball.y = c.height - 50;
+    ball.vx = 4 * (Math.random() > 0.5 ? 1 : -1); ball.vy = -4;
+  }
+  function update() {
+    if (keys['ArrowLeft'] || keys['a']) paddle.x -= paddle.speed;
+    if (keys['ArrowRight'] || keys['d']) paddle.x += paddle.speed;
+    if (mouseX !== null) paddle.x += (mouseX - paddle.x - paddle.w/2) * 0.2;
+    paddle.x = Math.max(0, Math.min(c.width - paddle.w, paddle.x));
+
+    ball.x += ball.vx; ball.y += ball.vy;
+    if (ball.x < ball.r || ball.x > c.width - ball.r) ball.vx *= -1;
+    if (ball.y < ball.r) ball.vy *= -1;
+
+    if (ball.y + ball.r > paddle.y && ball.y < paddle.y + paddle.h &&
+        ball.x > paddle.x && ball.x < paddle.x + paddle.w) {
+      ball.vy = -Math.abs(ball.vy);
+      ball.vx += (ball.x - (paddle.x + paddle.w/2)) * 0.1;
+    }
+    for (const b of bricks) {
+      if (!b.alive) continue;
+      if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w &&
+          ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h) {
+        b.alive = false; score += 10;
+        const oX = Math.min(ball.x + ball.r - b.x, b.x + b.w - (ball.x - ball.r));
+        const oY = Math.min(ball.y + ball.r - b.y, b.y + b.h - (ball.y - ball.r));
+        if (oX < oY) ball.vx *= -1; else ball.vy *= -1;
+        break;
+      }
+    }
+    if (ball.y > c.height) {
+      lives--;
+      if (lives <= 0) { alert('Игра окончена! Счёт: ' + score); score = 0; lives = 3; initBricks(); }
+      resetBall();
+    }
+    if (bricks.every(b => !b.alive)) {
+      alert('Победа! Счёт: ' + score); score = 0; lives = 3; initBricks(); resetBall();
+    }
+  }
+  function draw() {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, c.width, c.height);
+    for (const b of bricks) {
+      if (!b.alive) continue;
+      ctx.fillStyle = b.color; ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.strokeRect(b.x, b.y, b.w, b.h);
+    }
+    ctx.fillStyle = '#4caf50'; ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'white'; ctx.font = '18px Arial';
+    ctx.textAlign = 'left'; ctx.fillText('Счёт: ' + score, 10, 25);
+    ctx.textAlign = 'right'; ctx.fillText('Жизни: ' + lives, c.width - 10, 25);
+  }
+  function loop() { update(); draw(); rafId = requestAnimationFrame(loop); }
+  initBricks(); loop();
+
+  return () => {
+    cancelAnimationFrame(rafId);
+    removeEventListener('keydown', onKeyDown);
+    removeEventListener('keyup', onKeyUp);
+  };
+}
+
+// ================================================================
+// 7. FLAPPY BIRD
+// ================================================================
+function game_flappy(container) {
+  container.innerHTML = `
+    <h2>🐦 Flappy Bird</h2>
+    <canvas id="f_c" width="400" height="600" style="background:#70c5ce;border:3px solid #333"></canvas>
+    <div style="font-size:13px;color:#888">Space или клик</div>
+  `;
+  const c = document.getElementById('f_c'), ctx = c.getContext('2d');
+  const GRAVITY = 0.5, JUMP = -8, PIPE_W = 60, GAP = 150, SPEED = 3;
+  let bird, pipes, frame, score, best = +localStorage.getItem('flappy_best') || 0;
+  let started, gameOver, rafId;
+
+  function reset() {
+    bird = { x: 80, y: c.height/2, vy: 0, r: 12 };
+    pipes = []; frame = 0; score = 0; started = false; gameOver = false;
+  }
+  function spawnPipe() {
+    const gapY = 100 + Math.random() * (c.height - GAP - 200);
+    pipes.push({ x: c.width, gapY, passed: false });
+  }
+  function update() {
+    if (!started || gameOver) return;
+    bird.vy += GRAVITY; bird.y += bird.vy;
+    if (bird.y < 0 || bird.y > c.height) gameOver = true;
+    frame++;
+    if (frame % 90 === 0) spawnPipe();
+    for (const p of pipes) {
+      p.x -= SPEED;
+      if (!p.passed && p.x + PIPE_W < bird.x) { p.passed = true; score++; }
+      if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W) {
+        if (bird.y - bird.r < p.gapY || bird.y + bird.r > p.gapY + GAP) gameOver = true;
+      }
+    }
+    pipes = pipes.filter(p => p.x + PIPE_W > -10);
+    if (gameOver && score > best) { best = score; localStorage.setItem('flappy_best', best); }
+  }
+  function draw() {
+    ctx.fillStyle = '#70c5ce'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#5cb85c';
+    for (const p of pipes) {
+      ctx.fillRect(p.x, 0, PIPE_W, p.gapY);
+      ctx.fillRect(p.x, p.gapY + GAP, PIPE_W, c.height - p.gapY - GAP);
+      ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 3;
+      ctx.strokeRect(p.x, 0, PIPE_W, p.gapY);
+      ctx.strokeRect(p.x, p.gapY + GAP, PIPE_W, c.height - p.gapY - GAP);
+    }
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath(); ctx.arc(bird.x, bird.y, bird.r, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.stroke();
+    ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(bird.x+4, bird.y-4, 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(bird.x+5, bird.y-4, 2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#e67e22';
+    ctx.beginPath(); ctx.moveTo(bird.x+12, bird.y);
+    ctx.lineTo(bird.x+20, bird.y+2); ctx.lineTo(bird.x+12, bird.y+5); ctx.fill();
+    ctx.fillStyle = 'white'; ctx.font = 'bold 40px Arial'; ctx.textAlign = 'center';
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 4;
+    ctx.strokeText(score, c.width/2, 60); ctx.fillText(score, c.width/2, 60);
+    if (!started) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, c.height/2 - 60, c.width, 120);
+      ctx.fillStyle = 'white'; ctx.font = '24px Arial';
+      ctx.fillText('Нажми ПРОБЕЛ или клик', c.width/2, c.height/2 - 10);
+      ctx.font = '18px Arial';
+      ctx.fillText('Рекорд: ' + best, c.width/2, c.height/2 + 30);
+    }
+    if (gameOver) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, c.height/2 - 80, c.width, 160);
+      ctx.fillStyle = 'white'; ctx.font = 'bold 32px Arial';
+      ctx.fillText('Игра окончена!', c.width/2, c.height/2 - 30);
+      ctx.font = '22px Arial';
+      ctx.fillText('Счёт: ' + score, c.width/2, c.height/2 + 10);
+      ctx.fillText('Рекорд: ' + best, c.width/2, c.height/2 + 40);
+      ctx.font = '16px Arial';
+      ctx.fillText('ПРОБЕЛ для рестарта', c.width/2, c.height/2 + 70);
+    }
+  }
+  function jump() {
+    if (gameOver) { reset(); return; }
+    if (!started) started = true;
+    bird.vy = JUMP;
+  }
+  function onKey(e) { if (e.key === ' ') { e.preventDefault(); jump(); } }
+  function onClick() { jump(); }
+  addEventListener('keydown', onKey);
+  c.addEventListener('mousedown', onClick);
+  function loop() { update(); draw(); rafId = requestAnimationFrame(loop); }
+  reset(); loop();
+
+  return () => {
+    cancelAnimationFrame(rafId);
+    removeEventListener('keydown', onKey);
+    c.removeEventListener('mousedown', onClick);
+  };
+}
+
+// ================================================================
+// 8. НАЙДИ ПАРУ
+// ================================================================
+function game_memory(container) {
+  container.innerHTML = `
+    <h2>🎴 Найди пару</h2>
+    <div class="info">Ходы: <span id="m_moves">0</span> | Найдено: <span id="m_found">0</span> / 8</div>
+    <button class="btn" onclick="m_reset()">Новая игра</button>
+    <div class="mem-grid" id="m_grid"></div>
+  `;
+  const EMOJIS = ['🍎','🍌','🍇','🍓','🍒','🍑','🍉','🥝'];
+  let cards, flipped, moves, found, lock;
+
+  function reset() {
+    cards = [...EMOJIS, ...EMOJIS].sort(() => Math.random() - 0.5);
+    flipped = []; moves = 0; found = 0; lock = false;
+    render();
+  }
+  function render() {
+    const grid = document.getElementById('m_grid');
+    grid.innerHTML = '';
+    cards.forEach((emoji, i) => {
+      const div = document.createElement('div');
+      div.className = 'mem-card' + (emoji === null ? ' flipped matched' : '');
+      div.textContent = emoji || '';
+      div.onclick = () => flip(i, div);
+      grid.appendChild(div);
+    });
+    document.getElementById('m_moves').textContent = moves;
+    document.getElementById('m_found').textContent = found;
+  }
+  function flip(i, el) {
+    if (lock || cards[i] === null || flipped.includes(i)) return;
+    el.classList.add('flipped');
+    el.textContent = cards[i];
+    flipped.push(i);
+    if (flipped.length === 2) {
+      moves++;
+      document.getElementById('m_moves').textContent = moves;
+      const [a, b] = flipped;
+      if (cards[a] === cards[b]) {
+        found++;
+        setTimeout(() => {
+          cards[a] = null; cards[b] = null;
+          flipped = []; render();
+          if (found === 8) setTimeout(() => alert('Победа! Ходов: ' + moves), 100);
+        }, 300);
+      } else {
+        lock = true;
+        setTimeout(() => { flipped = []; render(); lock = false; }, 800);
+      }
+    }
+  }
+  window.m_reset = reset;
+  reset();
+  return () => { delete window.m_reset; };
+}
+
+// ================================================================
+// 9. САПЁР
+// ================================================================
+function game_minesweeper(container) {
+  container.innerHTML = `
+    <h2>💣 Сапёр</h2>
+    <div class="info">Мины: <span id="ms_mines">10</span> | Флагов: <span id="ms_flags">0</span></div>
+    <button class="btn" onclick="ms_reset()">Новая игра</button>
+    <div class="ms-grid" id="ms_grid"></div>
+    <div style="font-size:13px;color:#888">ЛКМ открыть, ПКМ флажок</div>
+  `;
+  const SIZE = 10, MINES = 10;
+  let board, revealed, flags, gameOver;
+
+  function reset() {
+    board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+    revealed = Array(SIZE).fill().map(() => Array(SIZE).fill(false));
+    flags = Array(SIZE).fill().map(() => Array(SIZE).fill(false));
+    gameOver = false;
+    let placed = 0;
+    while (placed < MINES) {
+      const i = Math.floor(Math.random()*SIZE), j = Math.floor(Math.random()*SIZE);
+      if (board[i][j] === -1) continue;
+      board[i][j] = -1; placed++;
+    }
+    for (let i = 0; i < SIZE; i++)
+      for (let j = 0; j < SIZE; j++) {
+        if (board[i][j] === -1) continue;
+        let c = 0;
+        for (let di = -1; di <= 1; di++)
+          for (let dj = -1; dj <= 1; dj++) {
+            const ni = i+di, nj = j+dj;
+            if (ni >= 0 && ni < SIZE && nj >= 0 && nj < SIZE && board[ni][nj] === -1) c++;
+          }
+        board[i][j] = c;
+      }
+    render();
+  }
+  function render() {
+    const grid = document.getElementById('ms_grid');
+    grid.style.gridTemplateColumns = `repeat(${SIZE}, 32px)`;
+    grid.innerHTML = '';
+    for (let i = 0; i < SIZE; i++)
+      for (let j = 0; j < SIZE; j++) {
+        const div = document.createElement('div');
+        div.className = 'ms-cell';
+        if (revealed[i][j]) {
+          div.classList.add('open');
+          if (board[i][j] === -1) { div.classList.add('mine'); div.textContent = '💣'; }
+          else if (board[i][j] > 0) {
+            div.textContent = board[i][j];
+            const colors = ['','#3498db','#2ecc71','#e74c3c','#9b59b6','#e67e22','#1abc9c','#333','#666'];
+            div.style.color = colors[board[i][j]];
+          }
+        } else if (flags[i][j]) { div.classList.add('flag'); div.textContent = '🚩'; }
+        div.onclick = () => click(i, j);
+        div.oncontextmenu = e => { e.preventDefault(); flag(i, j); };
+        grid.appendChild(div);
+      }
+    document.getElementById('ms_flags').textContent = flags.flat().filter(f => f).length;
+  }
+  function click(i, j) {
+    if (gameOver || revealed[i][j] || flags[i][j]) return;
+    reveal(i, j); render();
+    if (board[i][j] === -1) {
+      gameOver = true; revealAll(); render();
+      setTimeout(() => alert('💥 Бум! Игра окончена'), 100);
+      return;
+    }
+    checkWin();
+  }
+  function reveal(i, j) {
+    if (i < 0 || i >= SIZE || j < 0 || j >= SIZE || revealed[i][j]) return;
+    revealed[i][j] = true;
+    if (board[i][j] === 0)
+      for (let di = -1; di <= 1; di++)
+        for (let dj = -1; dj <= 1; dj++)
+          if (di || dj) reveal(i+di, j+dj);
+  }
+  function flag(i, j) {
+    if (gameOver || revealed[i][j]) return;
+    flags[i][j] = !flags[i][j]; render();
+  }
+  function revealAll() {
+    for (let i = 0; i < SIZE; i++)
+      for (let j = 0; j < SIZE; j++)
+        if (board[i][j] === -1) revealed[i][j] = true;
+  }
+  function checkWin() {
+    for (let i = 0; i < SIZE; i++)
+      for (let j = 0; j < SIZE; j++)
+        if (board[i][j] !== -1 && !revealed[i][j]) return;
+    gameOver = true;
+    setTimeout(() => alert('🎉 Победа!'), 100);
+  }
+  window.ms_reset = reset;
+  reset();
+  return () => { delete window.ms_reset; };
+}
+
+// ================================================================
+// 10. КРЕСТИКИ-НОЛИКИ
+// ================================================================
+function game_tictactoe(container) {
+  container.innerHTML = `
+    <h2>⭕ Крестики-нолики</h2>
+    <div id="ttt_status" style="font-size:22px;height:30px">Твой ход (X)</div>
+    <button class="btn" onclick="ttt_reset()">Новая игра</button>
+    <div class="ttt-grid" id="ttt_grid"></div>
+  `;
+  const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  let board, gameOver, playerTurn;
+  const status = document.getElementById('ttt_status');
+
+  function reset() {
+    board = Array(9).fill(''); gameOver = false; playerTurn = true;
+    status.textContent = 'Твой ход (X)';
+    render();
+  }
+  function checkWin(b) {
+    for (const w of WINS)
+      if (b[w[0]] && b[w[0]] === b[w[1]] && b[w[1]] === b[w[2]]) return b[w[0]];
+    return b.every(v => v) ? 'draw' : null;
+  }
+  function render() {
+    const grid = document.getElementById('ttt_grid');
+    grid.innerHTML = '';
+    board.forEach((v, i) => {
+      const div = document.createElement('div');
+      div.className = 'ttt-cell' + (v === 'X' ? ' x' : v === 'O' ? ' o' : '');
+      div.textContent = v;
+      div.onclick = () => click(i);
+      grid.appendChild(div);
+    });
+  }
+  function click(i) {
+    if (gameOver || board[i] || !playerTurn) return;
+    board[i] = 'X'; playerTurn = false; render();
+    let r = checkWin(board);
+    if (r) return finish(r);
+    setTimeout(aiMove, 300);
+  }
+  function aiMove() {
+    if (gameOver) return;
+    const best = minimax(board, 'O');
+    board[best.index] = 'O'; render();
+    let r = checkWin(board);
+    if (r) return finish(r);
+    playerTurn = true;
+    status.textContent = 'Твой ход (X)';
+  }
+  function finish(r) {
+    gameOver = true;
+    if (r === 'X') status.textContent = '🎉 Ты победил!';
+    else if (r === 'O') status.textContent = '😢 Бот победил';
+    else status.textContent = '🤝 Ничья';
+  }
+  function minimax(b, player, depth = 0) {
+    const r = checkWin(b);
+    if (r === 'X') return { score: -10 + depth };
+    if (r === 'O') return { score: 10 - depth };
+    if (r === 'draw') return { score: 0 };
+    const moves = [];
+    for (let i = 0; i < 9; i++) if (!b[i]) {
+      b[i] = player;
+      const res = minimax(b, player === 'O' ? 'X' : 'O', depth + 1);
+      moves.push({ index: i, score: res.score });
+      b[i] = '';
+    }
+    if (player === 'O') return moves.reduce((best, m) => m.score > best.score ? m : best);
+    return moves.reduce((best, m) => m.score < best.score ? m : best);
+  }
+  window.ttt_reset = reset;
+  reset();
+  return () => { delete window.ttt_reset; };
+}
+
+// ================================================================
+// 11. ЛАБИРИНТ
+// ================================================================
+function game_maze(container) {
+  container.innerHTML = `
+    <h2>🌀 Лабиринт</h2>
+    <div id="mz_msg" style="font-size:18px;color:#ffd54f;height:24px">Найди выход (WASD / стрелки)</div>
+    <canvas id="mz_c" width="600" height="600" style="background:#000;border:3px solid #4caf50"></canvas>
+  `;
+  const c = document.getElementById('mz_c'), ctx = c.getContext('2d');
+  const COLS = 15, ROWS = 15, SIZE = 40;
+  const WALL = 0, PATH = 1, START = 2, END = 3;
+  let maze, player, won;
+
+  function generate() {
+    maze = Array(ROWS).fill().map(() => Array(COLS).fill(WALL));
+    function carve(r, cc) {
+      maze[r][cc] = PATH;
+      const dirs = [[0,2],[0,-2],[2,0],[-2,0]].sort(() => Math.random() - 0.5);
+      for (const [dr, dc] of dirs) {
+        const nr = r + dr, nc = cc + dc;
+        if (nr > 0 && nr < ROWS-1 && nc > 0 && nc < COLS-1 && maze[nr][nc] === WALL) {
+          maze[r + dr/2][cc + dc/2] = PATH;
+          carve(nr, nc);
+        }
+      }
+    }
+    carve(1, 1);
+    maze[1][1] = START;
+    maze[ROWS-2][COLS-2] = END;
+    player = { r: 1, c: 1 };
+    won = false;
+  }
+  function draw() {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, c.width, c.height);
+    for (let i = 0; i < ROWS; i++)
+      for (let j = 0; j < COLS; j++) {
+        const x = j * SIZE, y = i * SIZE;
+        if (maze[i][j] === WALL) {
+          ctx.fillStyle = '#2c3e50';
+          ctx.fillRect(x, y, SIZE, SIZE);
+          ctx.strokeStyle = '#1a252f'; ctx.strokeRect(x, y, SIZE, SIZE);
+        } else if (maze[i][j] === START) {
+          ctx.fillStyle = 'rgba(76,175,80,0.3)'; ctx.fillRect(x, y, SIZE, SIZE);
+        } else if (maze[i][j] === END) {
+          ctx.fillStyle = 'rgba(255,213,79,0.4)'; ctx.fillRect(x, y, SIZE, SIZE);
+          ctx.fillStyle = '#ffd54f'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center';
+          ctx.fillText('🏁', x + SIZE/2, y + SIZE/2 + 8);
+        }
+      }
+    ctx.fillStyle = '#4caf50';
+    ctx.beginPath();
+    ctx.arc(player.c*SIZE + SIZE/2, player.r*SIZE + SIZE/2, SIZE/3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+  }
+  function move(dr, dc) {
+    if (won) return;
+    const nr = player.r + dr, nc = player.c + dc;
+    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) return;
+    if (maze[nr][nc] === WALL) return;
+    player.r = nr; player.c = nc;
+    if (maze[nr][nc] === END) {
+      won = true;
+      document.getElementById('mz_msg').textContent = '🎉 Ты нашёл выход!';
+      setTimeout(() => {
+        generate();
+        document.getElementById('mz_msg').textContent = 'Новый лабиринт!';
+        draw();
+      }, 1500);
+    }
+    draw();
+  }
+  function onKey(e) {
+    if (e.key === 'ArrowUp' || e.key === 'w') move(-1, 0);
+    if (e.key === 'ArrowDown' || e.key === 's') move(1, 0);
+    if (e.key === 'ArrowLeft' || e.key === 'a') move(0, -1);
+    if (e.key === 'ArrowRight' || e.key === 'd') move(0, 1);
+  }
+  addEventListener('keydown', onKey);
+  generate(); draw();
+  return () => removeEventListener('keydown', onKey);
+}
+
+// ================================================================
+// 12. РЕАКЦИЯ
+// ================================================================
+function game_reaction(container) {
+  container.innerHTML = `
+    <h2>⚡ Тест реакции</h2>
+    <div id="reactArea">
+      <div id="reactMsg">Нажми, чтобы начать</div>
+      <div id="reactTime"></div>
+    </div>
+  `;
+  const area = document.getElementById('reactArea');
+  const msg = document.getElementById('reactMsg');
+  const timeEl = document.getElementById('reactTime');
+  let state = 'idle', timeout, startTime, best = +localStorage.getItem('reaction_best') || 0;
+
+  function setIdle() {
+    state = 'idle';
+    area.className = '';
+    msg.textContent = 'Нажми, чтобы начать';
+    timeEl.textContent = best ? 'Рекорд: ' + best + ' мс' : '';
+  }
+  function onClick() {
+    if (state === 'idle') {
+      state = 'waiting';
+      area.className = 'waiting';
+      msg.textContent = 'Жди зелёного...';
+      timeEl.textContent = '';
+      timeout = setTimeout(() => {
+        state = 'ready';
+        area.className = 'ready';
+        msg.textContent = 'ЖМИ!';
+        startTime = performance.now();
+      }, 1000 + Math.random() * 3000);
+    } else if (state === 'waiting') {
+      clearTimeout(timeout);
+      state = 'idle'; area.className = '';
+      msg.textContent = 'Слишком рано! Попробуй снова';
+      timeEl.textContent = '';
+      setTimeout(setIdle, 1500);
+    } else if (state === 'ready') {
+      const time = Math.round(performance.now() - startTime);
+      state = 'idle';
+      area.className = 'result';
+      msg.textContent = time < 200 ? '🔥 Огонь!' : time < 300 ? '👍 Хорошо!' : '😐 Медленно';
+      timeEl.textContent = time + ' мс';
+      if (!best || time < best) {
+        best = time;
+        localStorage.setItem('reaction_best', best);
+        msg.textContent += ' 🏆 Новый рекорд!';
+      }
+      setTimeout(setIdle, 2000);
+    }
+  }
+  area.addEventListener('click', onClick);
+  setIdle();
+  return () => { area.removeEventListener('click', onClick); clearTimeout(timeout); };
+}
+
+</script>
+</body>
+</html>

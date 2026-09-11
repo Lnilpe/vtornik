@@ -213,7 +213,7 @@ def rub_word(n):
     if 11 <= last_two <= 14:
         word = "рублей"
     elif last_one == 1:
-        word = "рубль"
+        word = "рубль" 
     elif 2 <= last_one <= 4:
         word = "рубля"
     else:
@@ -260,3 +260,72 @@ except ValueError:
 |:---|:---:|---:|
 | текст | текст | текст |
 | длинный | тоже | число |
+## C1
+Готовый код
+```py
+energy = 10
+while True:
+    cmd = input("Команда: ")
+    if cmd == "стоп":
+        print("Итог:", energy)
+        break
+    elif cmd == "шаг":
+        energy = energy - 2
+        if energy <= 0:
+            print("Сел")
+            break
+        print("Заряд:", energy)
+    elif cmd == "заряд":
+        energy = energy + 3
+        if energy > 10:
+            energy = 10
+        print("Заряд:", energy)
+    else:
+        print("Не понял")
+```
+## C2 
+Готовый код
+```py
+secret = "421"
+tries = 3
+while tries > 0:
+    code = input("Код: ")
+    if code == secret:
+        print("Открыт")
+        break
+    tries = tries - 1
+    if tries == 0:
+        print("Закрыт")
+    else:
+        print("Осталось:", tries)
+```
+## C3
+Готовый код
+```py
+def price_of(gun):
+    if gun == "G22":
+        return 300
+    if gun == "AKR":
+        return 2700
+    if gun == "M4":
+        return 3100
+    if gun == "AWM":
+        return 4750
+    return None
+
+try:
+    gold = int(input("Голда: "))
+except ValueError:
+    print("Голда — число")
+    raise SystemExit
+gun = input("Оружие: ")
+price = price_of(gun)
+if price is None:
+    print("Нет такого оружия")
+elif gold < price:
+    need = price - gold
+    print("Не хватит. Нужно ещё", need)
+else:
+    left = gold - price
+    print("Купил", gun + ". Остаток", left)
+```

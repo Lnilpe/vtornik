@@ -1,19 +1,26 @@
-def rub_word(n):
-    last_two = n % 100
-    last_one = n % 10
-    #дальше по ТЗ
-    if 11 <= last_two <= 14:
-        word = "рублей"
-    elif last_one == 1:
-        word = "рубль"
-    elif 2 <= last_one <= 4:
-        word = "рубля"
-    else:
-        word = "рублей"
-    return word
+def price_of(gun):
+    if gun == "G22":
+        return 300
+    if gun == "AKR":
+        return 2700
+    if gun == "M4":
+        return 3100
+    if gun == "AWM":
+        return 4750
+    return None
 
 try:
-    money = int(input("Сумма: "))
-    print(money, rub_word(money))
+    gold = int(input("Голда: "))
 except ValueError:
-    print("Нужно целое число")
+    print("Голда — число")
+    raise SystemExit
+gun = input("Оружие: ")
+price = price_of(gun)
+if price is None:
+    print("Нет такого оружия")
+elif gold < price:
+    need = price - gold
+    print("Не хватит. Нужно ещё", need)
+else:
+    left = gold - price
+    print("Купил", gun + ". Остаток", left)
